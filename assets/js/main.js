@@ -389,7 +389,7 @@
   function initForms() {
     $$('form[data-lead-form]').forEach(function (form) {
       var btn      = $('[data-submit-btn]', form);
-      var btnLabel = btn ? btn.textContent : '';
+      var btnLabel = btn ? btn.innerHTML : '';
       var okBox    = $('[data-form-success]', form);
       var errBox   = $('[data-form-error]', form);
 
@@ -411,6 +411,10 @@
         var data = {};
         new FormData(form).forEach(function (v, k) { data[k] = v; });
 
+        if (String(data.name || '').trim().length < 2) {
+          status('error', 'Please enter your full name.');
+          return;
+        }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email || '')) {
           status('error', 'Please enter a valid email address.');
           return;
@@ -439,6 +443,7 @@
           .then(function (res) {
             if (res && res.success) {
               status('success');
+              try { document.dispatchEvent(new CustomEvent('tc:lead', { detail: { form: form } })); } catch (err) { /* old browser */ }
               form.reset();
               setTimeout(function () { status('idle'); }, 5000);
             } else {
@@ -449,7 +454,7 @@
             status('error', 'Network error. Please check your connection and try again.');
           })
           .then(function () {
-            if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
+            if (btn) { btn.disabled = false; btn.innerHTML = btnLabel; }
           });
       });
     });
@@ -473,13 +478,13 @@
   function cannedReply(text) {
     var q = text.toLowerCase();
     if (/visa|vls.?ts|campus france|interview|refus/.test(q))
-      return 'The French student visa is the **VLS-TS mention \u00ab \u00e9tudiant \u00bb**, which doubles as your residence permit \u2014 but only once you **validate it online within three months of arriving**, which is the most common avoidable mistake. Most applicants go through the **Campus France \u00ab \u00c9tudes en France \u00bb** procedure and sit an academic interview. Tutee Connect boasts a **99% French Student Visa Success Rate**, with expert mock interviews and rigorous documentation support.';
+      return 'The French student visa is the **VLS-TS mention \u00ab \u00e9tudiant \u00bb**, which doubles as your residence permit \u2014 but only once you **validate it online within three months of arriving** (fee: \u20ac100), which is the most common avoidable mistake. Most applicants go through the **Campus France \u00ab \u00c9tudes en France \u00bb** procedure and sit an academic interview. Tutee Connect boasts a **99% French Student Visa Success Rate**, with expert mock interviews and rigorous documentation support.';
     if (/scholarship|fund|financial|aid|bursar/.test(q))
-      return 'France funds international students unusually well \u2014 the **Eiffel Excellence** scholarships, regional and institutional grants, and the fact that public tuition starts at **\u20ac178 a year** in the first place. We analyse your academic profile and help you apply where you have the highest chance of securing funding.';
+      return 'France funds international students unusually well \u2014 the **Eiffel Excellence** scholarships plus regional and institutional grants. Eiffel pays **\u20ac1,200 a month for master\u2019s** and **\u20ac2,000 for PhD** students (2027 session, nominations close 6 January 2027), and Campus France India lists **500+ scholarships** open to Indian students. We analyse your academic profile and help you apply where you have the highest chance of securing funding.';
     if (/cost|fee|tuition|money|expense/.test(q))
-      return 'It depends entirely on where you go. A **public university** charges the state-set fee \u2014 **\u20ac178 for a licence and \u20ac254 for a master** in 2026-27, or the differentiated non-EU rate of \u20ac2,902 and \u20ac3,950 where the university applies it, and many waive it. A **grande \u00e9cole or private school** sets its own fees. Add the **\u20ac105 CVEC**, and budget **\u20ac877.50 a month** of resources for the visa. We help students secure **non-collateral education loans** and find part-time work.';
+      return 'It depends entirely on where you go. A **public university** charges the state-set fee \u2014 for non-EU students in 2026-27 that is **\u20ac2,902 for a licence and \u20ac3,950 for a master** (EU students pay \u20ac178 / \u20ac255); some universities grant partial exemptions. A **grande \u00e9cole or private school** sets its own fees. Add the **\u20ac105 CVEC**, the \u20ac50 visa fee and \u20ac100 VLS-TS validation, and budget **\u20ac877.50 a month** of resources for the visa (since 1 August 2026). We help students secure **non-collateral education loans** and find part-time work.';
     if (/job|work|earn|part.?time|job.?search|passeport talent/.test(q))
-      return "Absolutely! A French student residence permit lets you work **964 hours a year** \u2014 60% of the legal full-time year, about 20 hours a week but budgeted annually, so you can work more in the summer and less in term \u2014 with **no separate work permit**. After a master's you can take the **12-month job-search permit**, then the **Passeport Talent**. Our 'Earn While You Learn' initiative guides our students on securing these jobs immediately upon arrival.";
+      return "Absolutely! A French student residence permit lets you work **964 hours a year** \u2014 60% of the legal full-time year, about 20 hours a week but budgeted annually, so you can work more in the summer and less in term \u2014 with **no separate work permit**. After a master's you can take the **job-search permit** \u2014 **24 months for Indian graduates** \u2014 then the **carte talent**. Our 'Earn While You Learn' initiative guides our students on securing these jobs immediately upon arrival.";
     if (/ielts|pte|duolingo|gmat|exam|english/.test(q))
       return 'It depends on the language your course is taught in. For a **French-taught** programme you need **TCF, TEF, DELF B2 or DALF C1**, with B2 the normal minimum. France also teaches around **1,700 programmes in English**, which accept **IELTS Academic or TOEFL iBT**. Some postgraduate courses such as MBAs also ask for a GMAT score. We can help you shortlist institutions that perfectly match your current scores.';
     if (/tutee|connect|service|help/.test(q))

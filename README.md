@@ -132,3 +132,29 @@ or, to exercise the enquiry endpoint as well:
 ```bash
 RESEND_API_KEY=re_... python3 ../_tooling/devserver.py france
 ```
+
+## October 2026 redesign layer (hand-edited — port into `_tooling` before the next build)
+
+`index.html`, `assets/js/main.js` and `assets/js/services-data.js` were edited
+directly on 2026-10-06, so **the next `localise_fr.py` / `assemble.py` run will
+overwrite these changes** unless they are copied into `../_tooling/` first.
+
+- **Facts refreshed for 2026-27** (sources: service-public.gouv.fr, campusfrance.org,
+  france-visas.gouv.fr, inde.campusfrance.org, topuniversities.com): non-EU public
+  tuition €2,902 / €3,950; €877.50/month funds since 1 Aug 2026; €100 VLS-TS
+  validation; 75 Études en France countries and the ₹20,000 India fee; 24-month
+  post-study stay for Indian graduates; carte talent – salarié qualifié at
+  €39,582/yr; B2 + civics exam for naturalisation; APL restricted for non-EU
+  students since 1 Jul 2026; Eiffel 2027 at €1,200 / €2,000 a month; university
+  badges now show QS 2027 world ranks.
+- **New files:** `assets/css/enhance.css` and `assets/js/enhance.js` (morphing
+  blobs and headline, ticker, budget planner, tilt and parallax, hero lead card,
+  pop-up lead form, floating CTA, one nudge per session). Plain CSS/JS, no
+  libraries, CSP-safe, honours `prefers-reduced-motion`.
+- **Leads:** every new form is a `[data-lead-form]` and goes through the existing
+  `/api/enquiry` function. Destinations read "France — Hero roadmap form" and
+  "France — Popup consultation form"; the pop-up also sends `budget_estimate`
+  and `lead_trigger`, which arrive as extra rows in the email.
+- **Speed:** the home page no longer loads the 390 KB directory dataset or the
+  Supabase loader (`universities.html` still does), and the photographs were
+  resized to 1,100 px and recompressed, with WebP copies.
