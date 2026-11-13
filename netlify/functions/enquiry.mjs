@@ -20,7 +20,8 @@
  * to it.
  *
  * GET /api/enquiry answers a health check that says whether the variables are
- * present (never what they are).
+ * present (never what they are). GET /api/enquiry?check=1 also pings the Apps
+ * Script and reports its reply.
  */
 
 const COUNTRY = 'France';
@@ -80,8 +81,25 @@ export default async function (req) {
   const token = (process.env.APPS_SCRIPT_TOKEN || '').trim();
 
   if (req.method === 'GET') {
-    return json(200, { success: true, endpoint: 'enquiry', country: COUNTRY, destination: 'apps-script',
-      apps_script_url_set: Boolean(url), apps_script_token_set: Boolean(token) });
+    const health = { success: true, endpoint: 'enquiry', country: COUNTRY, destination: 'apps-script',
+      apps_script_url_set: Boolean(url), apps_script_token_set: Boolean(token) };
+    // ?check=1 also calls the Apps Script health check (doGet, no token sent),
+    // so a wrong URL or a deployment that isn't open to "Anyone" shows up here.
+    if (new URL(req.url).searchParams.has('check') && url) {
+      health.apps_script_url_looks_right = /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(url);
+      try {
+        const res = await fetch(url, { redirect: 'follow' });
+        const text = await res.text();
+        let out = null;
+        try { out = JSON.parse(text); } catch { /* not JSON */ }
+        health.apps_script_http_status = res.status;
+        health.apps_script_reply = out ? out.message : 'not JSON (usually a Google sign-in or error page: '
+          + 'deploy the web app with "Who has access: Anyone")';
+      } catch (err) {
+        health.apps_script_reply = `could not reach it: ${err?.name}`;
+      }
+    }
+    return json(200, health);
   }
   if (req.method !== 'POST') return json(405, { success: false, message: 'Method not allowed.' });
 
@@ -126,20 +144,22 @@ export default async function (req) {
     const text = await res.text();
     let out = null;
     try { out = JSON.parse(text); } catch { /* not JSON */ }
+    // `code` names the cause without revealing anything secret, so a failed
+    // test lead can be diagnosed from the browser's Network tab.
     if (!out) {
       console.error(`enquiry: Apps Script replied with non-JSON (HTTP ${res.status}): ${text.slice(0, 200)}`);
-      return json(502, { success: false, message: FAIL });
+      return json(502, { success: false, message: FAIL, code: `apps_script_not_json_http_${res.status}` });
     }
     if (!out.success) {
       console.error(`enquiry: Apps Script refused the lead: ${out.message}`);
-      return json(502, { success: false, message: FAIL });
+      return json(502, { success: false, message: FAIL, code: 'apps_script_' + String(out.message || 'refused').toLowerCase().replace(/[^a-z]+/g, '_') });
     }
     if (out.mailed === false) console.warn(`enquiry: saved to the sheet but the email failed: ${out.mail_error}`);
     console.log('enquiry: saved to France Leads');
     return json(200, { success: true, message: 'Thanks! An advisor will be in touch.' });
   } catch (err) {
     console.error(`enquiry: forwarding failed: ${err?.name}: ${err?.message}`);
-    return json(502, { success: false, message: FAIL });
+    return json(502, { success: false, message: FAIL, code: err?.name === 'AbortError' ? 'apps_script_timeout' : 'apps_script_unreachable' });
   } finally {
     clearTimeout(timer);
   }
