@@ -16,6 +16,9 @@
  *   APPS_SCRIPT_TOKEN  required  the value saved by setFranceToken() in Apps Script
  *   ALLOWED_ORIGINS    optional  comma-separated, e.g. https://tutee-france.netlify.app
  *
+ * Reached at /.netlify/functions/enquiry; netlify.toml rewrites POST /api/enquiry
+ * to it.
+ *
  * GET /api/enquiry answers a health check that says whether the variables are
  * present (never what they are).
  */
@@ -142,4 +145,6 @@ export default async function (req) {
   }
 }
 
-export const config = { path: '/api/enquiry' };
+// No `export const config = { path }` on purpose: a custom path takes the
+// function off /.netlify/functions/enquiry, which is exactly where the
+// /api/enquiry redirect in netlify.toml points, and every request 404s.

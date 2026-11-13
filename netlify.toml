@@ -17,9 +17,10 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# The pages post to /api/enquiry (same origin). The function also declares this
-# path itself via `export const config`, so this redirect is belt-and-braces:
-# it keeps the endpoint working on older Netlify function runtimes too.
+# The page posts to /api/enquiry (same origin); this rewrite sends it to the
+# function at /.netlify/functions/enquiry. Don't also give the function an
+# `export const config = { path }`: a custom path removes it from
+# /.netlify/functions/enquiry, and this rewrite then 404s.
 [[redirects]]
   from = "/api/enquiry"
   to = "/.netlify/functions/enquiry"
