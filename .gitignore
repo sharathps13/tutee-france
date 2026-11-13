@@ -13,3 +13,7 @@ _v.html
 _vu.html
 _sheet*.html
 _navtest.html
+
+# Claude download folder (not part of the site)
+assets/img/photos/Claude outputs/
+.env
