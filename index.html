@@ -2824,6 +2824,56 @@ html.ux-solo .ux.show>.ux-bg{animation-name:uxSoloBg;animation-duration:.9s}
   .f-col h4{margin-bottom:6px}
   .f-bottom{padding-block:14px!important;font-size:11.5px}
 }
+/* ===== v68 fixes ===== */
+/* boarding pass: the plane rides on the dashed line, level with the step numbers */
+.bp-route{align-items:flex-end}
+.bp-route .ln{margin-bottom:16px;height:2px;opacity:.85}
+.bp-route .ln svg{top:-10px;display:block}
+/* footer contacts */
+.f-contact{display:flex;flex-wrap:wrap;gap:10px}
+.f-contact a.copy{text-decoration:none}
+/* faq accordion (phones only) */
+.fq-acc{display:none}
+@media (max-width:700px){
+  /* how it works */
+  .bp-tab[aria-selected="true"]{white-space:normal!important;text-overflow:clip!important;overflow:visible!important;line-height:1.15;font-size:13px!important;padding-block:5px!important;min-height:44px}
+  .bp-route .ln{margin-bottom:13px}
+  #howPanel{touch-action:pan-y}
+  /* what we do: no fading text while switching stages */
+  .phase,.ph-tab,.ph-body{transition:none!important}
+  .phase:not(.on) .ph-body{display:none!important}
+  .phase.on .ph-tab{display:none!important}
+  .phase.on .ph-body{opacity:1;visibility:visible;transform:none;animation:phIn .35s ease both}
+  /* universities: the button always stays above the postcards */
+  .ut-cta{position:relative;z-index:6}
+  .ut-fan{margin-top:26px;position:relative;z-index:1}
+  /* faq: plain accordion instead of the chat */
+  .faq3 .chat,.fq-sugg-box{display:none!important}
+  .fq-acc{display:flex;flex-direction:column;gap:8px}
+  .fqa{border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:0 10px 24px -20px rgba(11,27,63,.5);overflow:hidden}
+  .fqa summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;font-weight:700;font-size:14.5px;line-height:1.35;color:var(--ink);cursor:pointer}
+  .fqa summary::-webkit-details-marker{display:none}
+  .fqa summary i{flex:none;width:24px;height:24px;border-radius:50%;background:rgba(36,87,197,.1);position:relative;transition:transform .25s}
+  .fqa summary i::before,.fqa summary i::after{content:"";position:absolute;left:7px;right:7px;top:11px;height:2px;border-radius:2px;background:#2457C5}
+  .fqa summary i::after{transform:rotate(90deg);transition:transform .25s}
+  .fqa[open] summary i::after{transform:rotate(0)}
+  .fqa[open]{border-color:rgba(247,148,29,.6)}
+  .fqa-a{padding:0 14px 13px;font-size:14px;line-height:1.55;color:var(--muted)}
+  .fqa-a p{margin:0 0 6px}.fqa-a p:last-child{margin:0}
+  .fqa-ask{margin-top:4px;align-self:flex-start;border:0;background:none;padding:6px 2px;font:inherit;font-size:14px;color:var(--muted);cursor:pointer}
+  .fqa-ask b{color:#C8102E}
+  :root[data-theme="dark"] .fqa{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
+  :root[data-theme="dark"] .fqa summary{color:#fff}
+  :root[data-theme="dark"] .fqa summary i{background:rgba(251,203,92,.15)}
+  :root[data-theme="dark"] .fqa summary i::before,:root[data-theme="dark"] .fqa summary i::after{background:#FBCB5C}
+  :root[data-theme="dark"] .fqa-a{color:rgba(255,255,255,.78)}
+  :root[data-theme="dark"] .fqa-ask b{color:#FBCB5C}
+  /* let's begin: lift the form off the artwork */
+  .form-card{margin-top:16px!important;border:1px solid rgba(255,255,255,.7)!important;box-shadow:0 28px 60px -26px rgba(5,11,30,.7),0 0 0 6px rgba(255,255,255,.12)!important}
+  #enq textarea{min-height:46px;height:46px;resize:none}
+  .f-contact{gap:8px}.f-contact .copy{font-size:13.5px;padding:8px 11px}
+}
+@keyframes phIn{from{opacity:0}to{opacity:1}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -3157,7 +3207,7 @@ html.ux-solo .ux.show>.ux-bg{animation-name:uxSoloBg;animation-duration:.9s}
     <div class="faq3">
       <aside class="fq-left">
         <div class="fq-topics" id="faqCats" role="tablist" aria-label="FAQ topics"></div>
-        <div class="fq-sugg-box"><p class="fq-lbl" id="fqLbl">Questions about applying</p><div class="fq-sugg" id="faqList"></div></div>
+        <div class="fq-acc" id="faqAcc"></div><div class="fq-sugg-box"><p class="fq-lbl" id="fqLbl">Questions about applying</p><div class="fq-sugg" id="faqList"></div></div>
       </aside>
       <div class="chat" role="region" aria-label="Advisor chat">
         <div class="chat-head"><span class="ch-av"><img src="img/a-ebf5b92873.webp" alt=""></span><div><b>Tutee Advisor</b><span><i class="ch-dot"></i>Checked answers, plus Tutee AI for anything else</span></div><button type="button" class="ch-clear" id="chClear">Clear chat</button></div>
@@ -3294,7 +3344,7 @@ html.ux-solo .ux.show>.ux-bg{animation-name:uxSoloBg;animation-duration:.9s}
       <div class="f-brand">
         <div class="f-logo f-logo-full"><img src="img/a-78661a5758.webp" alt="Tutee Connect, Study | Immigration" width="720" height="294"></div>
         <p>A study-abroad and immigration consultancy helping students from India and the Gulf study, work and settle in 14 countries.</p>
-        <button class="copy" type="button" id="copyMail"><svg width="18" height="18"><use href="#i-mail"/></svg><span id="mailTx">business@tuteeconnect.com</span><span class="ok" id="mailOk" hidden>Copied</span></button>
+        <div class="f-contact"><button class="copy" type="button" id="copyMail"><svg width="18" height="18"><use href="#i-mail"/></svg><span id="mailTx">business@tuteeconnect.com</span><span class="ok" id="mailOk" hidden>Copied</span></button><a class="copy" href="tel:+917358364959" aria-label="Call Tutee Connect on +91 73583 64959"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg><span>+91 73583 64959</span></a></div>
       </div>
       <div class="f-col"><h4>Explore</h4><ul><li><a href="#why">Why France</a></li><li><a href="#how">How it works</a></li><li><a href="#services">Services</a></li><li><a href="#universities">Universities</a></li><li><a href="#afford">Funding</a></li><li><a href="#pathway">Pathway to settle</a></li><li><a href="#faq">FAQ</a></li></ul></div>
       <div class="f-col"><h4>Key dates</h4><ul class="dates"><li><b>2 Oct 2026</b><span>Eiffel 2027 opens</span></li><li><b>6 Jan 2027</b><span>Eiffel nominations close</span></li><li><b>Apr 2027</b><span>Eiffel results</span></li><li><b>Sep 2027</b><span>Main intake starts</span></li></ul></div>

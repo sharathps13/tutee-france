@@ -276,7 +276,11 @@ function setHow(i,anim){if(i===hi)return;hi=i;seen[i]=1;var s=HOW[i],nx=HOW[i+1]
   $('#bpPrev').disabled=i===0;$('#bpNext').disabled=i===HOW.length-1;}
 htabs.forEach(function(b,k){b.addEventListener('click',function(){setHow(k,true);});
   b.addEventListener('keydown',function(e){var n=e.key==='ArrowRight'?k+1:e.key==='ArrowLeft'?k-1:-1;if(n>=0&&n<HOW.length){e.preventDefault();setHow(n,true);htabs[n].focus();}});});
-$('#bpPrev').addEventListener('click',function(){if(hi>0)setHow(hi-1,true);});$('#bpNext').addEventListener('click',function(){if(hi<HOW.length-1)setHow(hi+1,true);});
+$('#bpPrev').addEventListener('click',function(){if(hi>0)setHow(hi-1,true);});
+(function(){var p=$('#howPanel'),sx=0,sy=0,st=0;if(!p)return;
+  p.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX;sy=t.clientY;st=Date.now();},{passive:true});
+  p.addEventListener('touchend',function(e){var t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<45||Math.abs(dx)<Math.abs(dy)*1.3||Date.now()-st>700)return;
+    if(dx<0&&hi<HOW.length-1)setHow(hi+1,true);else if(dx>0&&hi>0)setHow(hi-1,true);},{passive:true});})();$('#bpNext').addEventListener('click',function(){if(hi<HOW.length-1)setHow(hi+1,true);});
 setHow(0,false);
 
 /* ---------- university finder ---------- */
@@ -580,11 +584,15 @@ var FAQ=[
 var CATS=[['Applying','i-doc'],['Visa','i-pass'],['Funding','i-coin'],['After graduation','i-brief'],['Life in France','i-home']],fcat='Applying',asked={};
 var tops=$('#faqCats'),sug=$('#faqList'),log=$('#chatLog'),quick=$('#chatQuick'),inp=$('#faqSearch'),busy=false;
 tops.innerHTML=CATS.map(function(c,i){var n=FAQ.filter(function(f){return f[0]===c[0];}).length;return '<button type="button" class="fq-topic" role="tab" aria-selected="'+(i===0)+'" data-c="'+c[0]+'"><span class="ic"><svg width="18" height="18"><use href="#'+c[1]+'"/></svg></span>'+c[0]+'<span class="ct">'+n+'</span></button>';}).join('');
+function drawAcc(){var box=$('#faqAcc');if(!box)return;var list=FAQ.filter(function(f){return f[0]===fcat;});
+  box.innerHTML=list.map(function(f,k){return '<details class="fqa"'+(k===0?' open':'')+'><summary><span>'+f[1]+'</span><i aria-hidden="true"></i></summary><div class="fqa-a">'+f[2].map(function(p){return '<p>'+p+'</p>';}).join('')+'</div></details>';}).join('')
+   +'<button type="button" class="fqa-ask" data-ask="">Can\'t find your question? <b>Ask Tutee AI →</b></button>';
+  $$('details',box).forEach(function(d){d.addEventListener('toggle',function(){if(d.open)$$('details',box).forEach(function(o){if(o!==d)o.open=false;});});});}
 function drawSugg(){var list=FAQ.map(function(f,i){return [f,i];}).filter(function(p){return p[0][0]===fcat;});
   $('#fqLbl').textContent='Questions about '+fcat.toLowerCase();
   sug.innerHTML=list.map(function(p,k){return '<button type="button" class="fq-q'+(asked[p[1]]?' asked':'')+'" data-i="'+p[1]+'" style="--d:'+k+'">'+p[0][1]+'</button>';}).join('');
   $$('.fq-q',sug).forEach(function(b){b.addEventListener('click',function(){ask(+b.dataset.i);});});
-  $$('.fq-topic',tops).forEach(function(t){t.setAttribute('aria-selected',String(t.dataset.c===fcat));});}
+  $$('.fq-topic',tops).forEach(function(t){t.setAttribute('aria-selected',String(t.dataset.c===fcat));});drawAcc();}
 $$('.fq-topic',tops).forEach(function(t){t.addEventListener('click',function(){fcat=t.dataset.c;drawSugg();});});
 function add(cls,html){var d=document.createElement('div');d.className='msg '+cls;d.innerHTML=html;log.appendChild(d);log.scrollTop=log.scrollHeight;return d;}
 function botSay(html,cb){if(reduce){add('bot',html);cb&&cb();return;}var t=document.createElement('div');t.className='typing';t.innerHTML='<i></i><i></i><i></i>';log.appendChild(t);log.scrollTop=log.scrollHeight;
@@ -640,8 +648,10 @@ greet();
   function bake(dark,g){base.width=cv.width;base.height=cv.height;bctx.setTransform(dpr,0,0,dpr,0,0);bctx.clearRect(0,0,W,H);
     for(var y=g/2;y<H;y+=g)for(var x=g/2;x<W;x+=g){var c=col(x);if(!dark&&x/W>.36&&x/W<.64)c=[120,130,170];bctx.fillStyle='rgba('+c[0]+','+c[1]+','+c[2]+','+(dark?.10:.14)+')';bctx.beginPath();bctx.arc(x,y,1.2,0,6.283);bctx.fill();}
     bdark=dark;bW=W;bH=H;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);ctx.drawImage(base,0,0,W,H);px0=py0=px1=py1=0;}
-  function run(){if(!raf&&vis&&!reduce)raf=requestAnimationFrame(frame);}
-  sec.addEventListener('pointermove',function(e){var r2=sec.getBoundingClientRect();mx=e.clientX-r2.left;my=e.clientY-r2.top;});
+  var still=window.matchMedia&&matchMedia('(max-width:700px)');
+  function run(){if(still&&still.matches){size();bake(document.documentElement.getAttribute('data-theme')==='dark',26);return;}if(!raf&&vis&&!reduce)raf=requestAnimationFrame(frame);}
+  $('#themeBtn').addEventListener('click',function(){if(still&&still.matches&&vis)setTimeout(run,60);});
+  sec.addEventListener('pointermove',function(e){if(e.pointerType!=='mouse'||(still&&still.matches))return;var r2=sec.getBoundingClientRect();mx=e.clientX-r2.left;my=e.clientY-r2.top;});
   sec.addEventListener('pointerleave',function(){mx=-999;my=-999;t0=performance.now()-((Math.asin(Math.max(-1,Math.min(1,(tx/W-.5)/.38)))/.35)*1000||0);});
   window.addEventListener('resize',size);size();
   if(reduce){vis=true;mx=W/2;my=H/2;tx=mx;ty=my;frame(0);vis=false;}
@@ -867,6 +877,7 @@ function showDone(d,animate){var first=esc(String(d.name||'').trim().split(/\s+/
 var prevDone=lsGet(LEAD_KEY);if(prevDone&&Date.now()-prevDone.at<30*864e5)showDone(prevDone,false);
 (function(){var ph=$('#f-phone'),cc=$('#f-cc');if(!ph)return;function chk(){if(!ph.value.trim())return;var r=checkPhone(cc?cc.value:'+91',ph.value);setErr('phone_number',r.ok?'':r.msg);}
   ph.addEventListener('blur',chk);var last=cc?cc.value:'';setInterval(function(){if(cc&&cc.value!==last){last=cc.value;chk();}},400);})();
+(function(){var m=$('#f-msg');if(m&&window.matchMedia&&matchMedia('(max-width:700px)').matches)m.placeholder='Grades, course, budget or questions';})();
 var sending=false;
 form.addEventListener('submit',function(e){e.preventDefault();if(sending)return;var ok=true,d=new FormData(form),err=$('#enqErr');err.hidden=true;
   var name=String(d.get('name')||'').trim(),email=String(d.get('email')||'').trim(),num=String(d.get('phone_number')||'').trim();
