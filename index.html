@@ -2874,6 +2874,15 @@ html.ux-solo .ux.show>.ux-bg{animation-name:uxSoloBg;animation-duration:.9s}
   .f-contact{gap:8px}.f-contact .copy{font-size:13.5px;padding:8px 11px}
 }
 @keyframes phIn{from{opacity:0}to{opacity:1}}
+/* ===== v69 boarding pass header on one line ===== */
+.bp-top{flex-wrap:nowrap}
+.bp-top>*{white-space:nowrap}
+@media (max-width:700px){
+  .bp-top{font-size:10.5px;letter-spacing:.07em;gap:8px}
+  .bp-top .air{gap:6px;min-width:0}
+  .bp-top .air svg{width:14px;height:14px;flex:none}
+}
+@media (max-width:360px){.bp-top{font-size:8.6px;letter-spacing:.02em;gap:6px}.bp-top .air{gap:4px}.bp-top .air svg{width:11px;height:11px}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
