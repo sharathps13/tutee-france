@@ -2883,6 +2883,19 @@ html.ux-solo .ux.show>.ux-bg{animation-name:uxSoloBg;animation-duration:.9s}
   .bp-top .air svg{width:14px;height:14px;flex:none}
 }
 @media (max-width:360px){.bp-top{font-size:8.6px;letter-spacing:.02em;gap:6px}.bp-top .air{gap:4px}.bp-top .air svg{width:11px;height:11px}}
+/* ===== v70 phone: university postcard fan stays inside the screen ===== */
+@media (max-width:700px){
+  .ut-fan{zoom:.74!important;height:350px!important;margin:22px auto 0!important;max-width:100%;overflow:visible}
+  .ut-fan .pc-mini:nth-child(1){--r:-11deg!important;--x:-66px!important;--y:10px!important}
+  .ut-fan .pc-mini:nth-child(2){--r:-5deg!important;--x:-33px!important;--y:0px!important}
+  .ut-fan .pc-mini:nth-child(3){--r:0deg!important;--x:0px!important;--y:-6px!important}
+  .ut-fan .pc-mini:nth-child(4){--r:5deg!important;--x:33px!important;--y:2px!important}
+  .ut-fan .pc-mini:nth-child(5){--r:11deg!important;--x:66px!important;--y:12px!important}
+  /* no spreading on tap: cards stay put, the touched one just lifts a little */
+  .ut-fan:hover .pc-mini,.ut-fan .pc-mini{transform:rotate(var(--r)) translate(var(--x),var(--y))!important}
+  .ut-fan .pc-mini:hover,.ut-fan .pc-mini:active{transform:rotate(var(--r)) translate(var(--x),calc(var(--y) - 10px))!important}
+}
+@media (max-width:700px) and (max-height:760px){.ut-fan{zoom:.66!important;height:340px!important;margin-top:16px!important}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
