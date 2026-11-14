@@ -61,18 +61,57 @@ export function toLead(b, token) {
     course: clean(b.course, 300),
     lead_source: leadSource,
     call_time: clean(b.call_time, 80),
-    destination: 'France' + (city ? ` (flying from ${city})` : ''),
+    // The message also rides in `destination` ("Interested In" in the email),
+    // because the original Apps Script has no separate message field.
+    destination: 'France' + (city ? ` (flying from ${city})` : '')
+      + (clean(b.message, 1500) ? ` · Message: ${clean(b.message, 500)}` : ''),
     message: clean(b.message, 1500),
     page: clean(b.page, 200),
   };
+}
+
+/* ---- phone numbers: same rules as the form (assets/js/fr-main.js) ---- */
+/* Phone check per dial code: [national-number pattern, message]. Mobile and landline formats real carriers use. */
+const PHONE_RULES={
+  '+91':[/^[6-9]\d{9}$/,'Indian mobile numbers have 10 digits and start with 6, 7, 8 or 9.'],
+  '+971':[/^(5[024568]\d{7}|[2-4679]\d{7})$/,'UAE numbers have 9 digits for mobiles (50, 52, 54, 55, 56 or 58…) or 8 for landlines.'],
+  '+94':[/^(7[0-8]\d{7}|[1-689]\d{8})$/,'Sri Lankan numbers have 9 digits, mobiles start with 7.'],
+  '+977':[/^(9[78]\d{8}|[1-8]\d{6,7})$/,'Nepali mobiles have 10 digits and start with 97 or 98.'],
+  '+880':[/^(1[3-9]\d{8}|[2-9]\d{6,9})$/,'Bangladeshi mobiles have 10 digits after +880 and start with 13 to 19.'],
+  '+974':[/^[3-7]\d{7}$/,'Qatari numbers have 8 digits and start with 3, 4, 5, 6 or 7.'],
+  '+966':[/^(5\d{8}|1\d{7})$/,'Saudi mobiles have 9 digits and start with 5.'],
+  '+968':[/^[279]\d{7}$/,'Omani numbers have 8 digits and start with 7, 9 or 2.'],
+  '+65':[/^[689]\d{7}$/,'Singapore numbers have 8 digits and start with 6, 8 or 9.'],
+  '+33':[/^[1-9]\d{8}$/,'French numbers have 9 digits after +33 (10 with the leading 0).'],
+  '+44':[/^(7\d{9}|[1-3]\d{8,9})$/,'UK mobiles have 10 digits after +44 and start with 7.'],
+  '+1':[/^[2-9]\d{2}[2-9]\d{6}$/,'US and Canadian numbers have 10 digits: area code then number.']
+};
+/* Returns {ok:true, e164:'+91 9876543210'} or {ok:false, msg}. */
+function checkPhone(cc,raw){
+  cc=String(cc||'').trim();var d=String(raw||'').replace(/\D/g,''),cd=cc.replace(/\D/g,'');
+  if(!d)return {ok:false,msg:'Enter a phone number we can reach you on.'};
+  var r=PHONE_RULES[cc];
+  /* typed the country code again (+91 98…, 0091 98…, 9198…) */
+  var dd=d.replace(/^00/,'');if(cd&&dd.indexOf(cd)===0&&(String(raw).trim().charAt(0)==='+'||/^00/.test(d)||(r&&!r[0].test(d.replace(/^0+/,''))&&r[0].test(dd.slice(cd.length).replace(/^0+/,'')))))d=dd.slice(cd.length);
+  if(cd!=='1'&&d.charAt(0)==='0')d=d.replace(/^0+/,'');                                                   /* trunk 0, e.g. 098765… or 07… */
+  if(/^(\d)\1+$/.test(d))return {ok:false,msg:'That number doesn\'t look real. Please check it.'};
+  var seq='01234567890123456789',rev='98765432109876543210';
+  if(d.length>=7&&(seq.indexOf(d)>-1||rev.indexOf(d)>-1))return {ok:false,msg:'That number doesn\'t look real. Please check it.'};
+  if(/^(\d{2})\1{3,}$/.test(d)||/^(\d{3})\1{2,}$/.test(d))return {ok:false,msg:'That number doesn\'t look real. Please check it.'};
+  var tail=d.slice(-7);if(/^(\d)\1{6}$/.test(tail))return {ok:false,msg:'That number doesn\'t look real. Please check it.'};
+  if(r){if(!r[0].test(d))return {ok:false,msg:r[1]};}
+  else if(d.length<6||d.length+cd.length>15)return {ok:false,msg:'Enter a valid number for that country, without the country code.'};
+  return {ok:true,e164:cc+' '+d};
 }
 
 /** Server-side mirror of the form's checks. Returns an error message or null. */
 export function validate(lead) {
   if (lead.name.length < 2) return 'Please enter your name.';
   if (!EMAIL_RE.test(lead.email)) return 'Please enter a valid email address.';
-  const digits = lead.phone.replace(/\D/g, '');
-  if (digits.length < 7 || digits.length > 15) return 'Please enter a valid phone number.';
+  const m = /^(\+\d{1,4})\s*(.*)$/.exec(lead.phone);
+  const res = m ? checkPhone(m[1], m[2]) : checkPhone('', lead.phone);
+  if (!res.ok) return res.msg;
+  lead.phone = res.e164;          // stored the same way for every lead: "+91 9812312345"
   return null;
 }
 

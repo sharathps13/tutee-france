@@ -34,7 +34,7 @@ var mbar=$('#mbar');function mbarSet(on){if(!mbar)return;mbar.classList.toggle('
     r.addEventListener('scroll',function(){if(!t)t=requestAnimationFrame(upd);},{passive:true});upd();
     function vis(){d.style.display=mq.matches?'':'none';}vis();try{mq.addEventListener('change',vis);}catch(e){mq.addListener&&mq.addListener(vis);}});})();
 if('IntersectionObserver' in window){
-  new IntersectionObserver(function(e){heroVis=e[0].isIntersecting;fc.classList.toggle('show',!heroVis&&!enqVis);mbarSet(!heroVis&&!enqVis);},{threshold:.2}).observe($('#home'));
+  new IntersectionObserver(function(e){heroVis=e[0].isIntersecting;fc.classList.toggle('show',!heroVis&&!enqVis);mbarSet(!heroVis&&!enqVis);document.documentElement.classList.toggle('in-hero',heroVis);},{threshold:.2}).observe($('#home'));
   new IntersectionObserver(function(e){enqVis=e[0].isIntersecting;fc.classList.toggle('show',!heroVis&&!enqVis);mbarSet(!heroVis&&!enqVis);},{threshold:.12}).observe($('#enquire'));
   var links=$$('.nav-links a[href^="#"]:not(.btn)');
   var so=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){l.classList.toggle('on',l.getAttribute('href')==='#'+e.target.id);});}});},{rootMargin:'-45% 0px -50% 0px'});
@@ -232,7 +232,7 @@ if(location.hash==='#enquire')setTimeout(function(){goEnq(false);},300);
   try{saved=localStorage.getItem('tc-theme');}catch(e){}
   var sys=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
   function apply(t){root.setAttribute('data-theme',t);btn.setAttribute('aria-pressed',String(t==='dark'));btn.setAttribute('aria-label',t==='dark'?'Switch to light mode':'Switch to dark mode');}
-  apply(window.__THEME||saved||root.getAttribute('data-theme')||sys);
+  apply(window.__THEME||'light'); /* every visit opens in light mode; the switch still works */
   btn.addEventListener('click',function(){var next=root.getAttribute('data-theme')==='dark'?'light':'dark';
     try{localStorage.setItem('tc-theme',next);}catch(e){}
     btn.classList.remove('pop');void btn.offsetWidth;btn.classList.add('pop');
@@ -604,6 +604,9 @@ $('#chatForm').addEventListener('submit',function(e){e.preventDefault();var s=in
   busy=true;add('me',esc(s));inp.value='';quick.hidden=true;var fm=$('#f-msg');if(fm&&!fm.value)fm.value=s;
   botSay('<p>That\'s a great question for one of our advisors. I\'ve added it to the consultation form so they can answer it for your profile.</p><p><a href="#enquire">Go to the form →</a></p>',function(){busy=false;});});
 $('#chClear').addEventListener('click',greet);
+/* the mouse wheel over the chat scrolls the page, not the chat (new replies still scroll the chat into view) */
+$$('#faq .chat-log,#faq .fq-sugg-box,#faq .fq-sugg').forEach(function(el){el.addEventListener('wheel',function(e){if(e.ctrlKey||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;e.preventDefault();e.stopPropagation();
+  var dy=e.deltaY*(e.deltaMode===1?40:e.deltaMode===2?innerHeight:1);window.scrollTo({top:window.pageYOffset+dy,left:0,behavior:'instant'});},{passive:false});});
 greet();
 (function(){var bg=$('#faqBg'),s='',sd=9;function r(){sd=(sd*16807)%2147483647;return sd/2147483647;}var G=['?','?','✦','?','!','?','✦','?'];
   for(var i=0;i<16;i++){s+='<span class="fq-glyph" style="left:'+(r()*100).toFixed(1)+'%;font-size:'+(28+r()*70).toFixed(0)+'px;--t:'+(14+r()*14).toFixed(1)+'s;--dl:-'+(r()*24).toFixed(1)+'s;--r0:'+((r()-.5)*40).toFixed(0)+'deg;--r1:'+((r()-.5)*120).toFixed(0)+'deg;--o:'+(.06+r()*.12).toFixed(2)+'">'+G[i%G.length]+'</span>';}
@@ -680,7 +683,7 @@ greet();
 })();
 
 /* ---------- journey rail ---------- */
-(function(){var S=[['home','Welcome'],['why','Why France'],['how','How it works'],['services','What we do'],['universities','Universities'],['afford','Funding'],['pathway','Pathway'],['family','Family'],['stories','Stories'],['faq','FAQ'],['enquire','Consultation']];
+(function(){var S=[['home','Welcome'],['why','Why France'],['how','How it works'],['services','What we do'],['universities','Universities'],['afford','Funding'],['partners','Loan partners'],['pathway','Pathway'],['family','Family'],['stories','Stories'],['faq','FAQ'],['enquire','Consultation']];
   var dots=$('#jrDots'),fill=$('#jrFill'),plane=$('#jrPlane'),pct=$('#jrPct'),last=-1,lastY=0;
   dots.innerHTML=S.map(function(s){return '<li data-id="'+s[0]+'"><a href="#'+s[0]+'" aria-label="'+s[1]+'"><span>'+s[1]+'</span></a></li>';}).join('');
   var lis=$$('li',dots);
@@ -810,6 +813,38 @@ setOrigin(start,true);
 var form=$('#enq');
 function setErr(f,msg){var el=form.querySelector('[data-f="'+f+'"]');el.classList.toggle('bad',!!msg);el.querySelector('.err').textContent=msg||'';}
 form.addEventListener('input',function(e){var p=e.target.closest('.field');if(p&&p.dataset.f)setErr(p.dataset.f,'');});
+/* Phone check per dial code: [national-number pattern, message]. Mobile and landline formats real carriers use. */
+var PHONE_RULES={
+  '+91':[/^[6-9]\d{9}$/,'Indian mobile numbers have 10 digits and start with 6, 7, 8 or 9.'],
+  '+971':[/^(5[024568]\d{7}|[2-4679]\d{7})$/,'UAE numbers have 9 digits for mobiles (50, 52, 54, 55, 56 or 58…) or 8 for landlines.'],
+  '+94':[/^(7[0-8]\d{7}|[1-689]\d{8})$/,'Sri Lankan numbers have 9 digits, mobiles start with 7.'],
+  '+977':[/^(9[78]\d{8}|[1-8]\d{6,7})$/,'Nepali mobiles have 10 digits and start with 97 or 98.'],
+  '+880':[/^(1[3-9]\d{8}|[2-9]\d{6,9})$/,'Bangladeshi mobiles have 10 digits after +880 and start with 13 to 19.'],
+  '+974':[/^[3-7]\d{7}$/,'Qatari numbers have 8 digits and start with 3, 4, 5, 6 or 7.'],
+  '+966':[/^(5\d{8}|1\d{7})$/,'Saudi mobiles have 9 digits and start with 5.'],
+  '+968':[/^[279]\d{7}$/,'Omani numbers have 8 digits and start with 7, 9 or 2.'],
+  '+65':[/^[689]\d{7}$/,'Singapore numbers have 8 digits and start with 6, 8 or 9.'],
+  '+33':[/^[1-9]\d{8}$/,'French numbers have 9 digits after +33 (10 with the leading 0).'],
+  '+44':[/^(7\d{9}|[1-3]\d{8,9})$/,'UK mobiles have 10 digits after +44 and start with 7.'],
+  '+1':[/^[2-9]\d{2}[2-9]\d{6}$/,'US and Canadian numbers have 10 digits: area code then number.']
+};
+/* Returns {ok:true, e164:'+91 9876543210'} or {ok:false, msg}. */
+function checkPhone(cc,raw){
+  cc=String(cc||'').trim();var d=String(raw||'').replace(/\D/g,''),cd=cc.replace(/\D/g,'');
+  if(!d)return {ok:false,msg:'Enter a phone number we can reach you on.'};
+  var r=PHONE_RULES[cc];
+  /* typed the country code again (+91 98…, 0091 98…, 9198…) */
+  var dd=d.replace(/^00/,'');if(cd&&dd.indexOf(cd)===0&&(String(raw).trim().charAt(0)==='+'||/^00/.test(d)||(r&&!r[0].test(d.replace(/^0+/,''))&&r[0].test(dd.slice(cd.length).replace(/^0+/,'')))))d=dd.slice(cd.length);
+  if(cd!=='1'&&d.charAt(0)==='0')d=d.replace(/^0+/,'');                                                   /* trunk 0, e.g. 098765… or 07… */
+  if(/^(\d)\1+$/.test(d))return {ok:false,msg:'That number doesn\'t look real. Please check it.'};
+  var seq='01234567890123456789',rev='98765432109876543210';
+  if(d.length>=7&&(seq.indexOf(d)>-1||rev.indexOf(d)>-1))return {ok:false,msg:'That number doesn\'t look real. Please check it.'};
+  if(/^(\d{2})\1{3,}$/.test(d)||/^(\d{3})\1{2,}$/.test(d))return {ok:false,msg:'That number doesn\'t look real. Please check it.'};
+  var tail=d.slice(-7);if(/^(\d)\1{6}$/.test(tail))return {ok:false,msg:'That number doesn\'t look real. Please check it.'};
+  if(r){if(!r[0].test(d))return {ok:false,msg:r[1]};}
+  else if(d.length<6||d.length+cd.length>15)return {ok:false,msg:'Enter a valid number for that country, without the country code.'};
+  return {ok:true,e164:cc+' '+d};
+}
 /* ---------- lead form → /api/enquiry → Apps Script (Google Sheets + email) ---------- */
 var ENQUIRY_ENDPOINT=window.TC_ENQUIRY_ENDPOINT||'/api/enquiry';
 var LIVE=/^https?:$/.test(location.protocol)&&!/(^|\.)(claude\.ai|claudeusercontent\.com|claudemcpcontent\.com|anthropic\.com)$/.test(location.hostname)&&!(window.claude&&window.claude.use);
@@ -830,16 +865,18 @@ function showDone(d,animate){var first=esc(String(d.name||'').trim().split(/\s+/
   var dn=$('#formwrap .done');if(animate&&dn){dn.focus({preventScroll:true});var r=dn.getBoundingClientRect();if(r.top<70||r.bottom>innerHeight)dn.scrollIntoView({block:'center',behavior:reduce?'auto':'smooth'});}
   $('#formwrap .again').addEventListener('click',function(){lsSet(LEAD_KEY,null);location.hash='enquire';location.reload();});}
 var prevDone=lsGet(LEAD_KEY);if(prevDone&&Date.now()-prevDone.at<30*864e5)showDone(prevDone,false);
+(function(){var ph=$('#f-phone'),cc=$('#f-cc');if(!ph)return;function chk(){if(!ph.value.trim())return;var r=checkPhone(cc?cc.value:'+91',ph.value);setErr('phone_number',r.ok?'':r.msg);}
+  ph.addEventListener('blur',chk);var last=cc?cc.value:'';setInterval(function(){if(cc&&cc.value!==last){last=cc.value;chk();}},400);})();
 var sending=false;
 form.addEventListener('submit',function(e){e.preventDefault();if(sending)return;var ok=true,d=new FormData(form),err=$('#enqErr');err.hidden=true;
   var name=String(d.get('name')||'').trim(),email=String(d.get('email')||'').trim(),num=String(d.get('phone_number')||'').trim();
   if(name.length<2){setErr('name','Enter your name.');ok=false;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){setErr('email','Enter a valid email address, like name@email.com.');ok=false;}
-  if(num.replace(/\D/g,'').length<7||num.replace(/\D/g,'').length>15){setErr('phone_number','Enter a phone number we can reach you on.');ok=false;}
+  var pc=checkPhone(String(d.get('country_code')||'+91'),num);if(!pc.ok){setErr('phone_number',pc.msg);ok=false;}
   if(!ok){var b=form.querySelector('.bad input,.bad select');if(b)b.focus();return;}
   if(d.get('botcheck'))return; /* bots tick the hidden box */
   var level=String(d.get('description_level')||''),msg=String(d.get('description')||'').trim();
-  var data={name:name,email:email,phone:(String(d.get('country_code')||'+91')+' '+num).trim(),state:String(d.get('state')||''),call_time:String(d.get('call_time')||'Anytime'),
+  var data={name:name,email:email,phone:pc.e164,state:String(d.get('state')||''),call_time:String(d.get('call_time')||'Anytime'),
     course:level,message:msg,shortlist:shortlist().join(', '),origin_city:String(d.get('origin_city')||''),destination:'France',form_location:'Consultation form',
     page:(function(){try{return location.host+location.pathname;}catch(x){return '';}})()};
   Object.keys(UTM).forEach(function(k){data[k]=UTM[k];});
